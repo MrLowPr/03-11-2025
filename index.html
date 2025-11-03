@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Emosi Manusia</title>
+  <meta name="description" content="Situs edukasi emosi manusia — definisi, jenis, pengelolaan, latihan, history, export, dark/light, animasi." />
+  <style>
+    :root{
+      --bg:#f6f8fb; --card:#ffffff; --muted:#5b6370; --accent:#6b46ff; --accent-2:#06b6d4; --success:#16a34a; --danger:#ef4444; --glass:rgba(15,23,42,0.04); --radius:14px;
+      --glass-2: rgba(255,255,255,0.06);
+    }
+    [data-theme='dark']{ --bg:#071026; --card:#071428; --muted:#98a2b3; color:#e6eef6 }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial;color:#0f1724;background:linear-gradient(180deg,var(--bg),#e9eefb);}
+    body{padding:24px;}
+    .wrap{max-width:1100px;margin:0 auto}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:4px 0 0;color:var(--muted)}
+
+    .layout{display:grid;grid-template-columns:320px 1fr;gap:18px;margin-top:18px}
+    .panel{background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid var(--glass);box-shadow:0 8px 30px rgba(2,6,23,0.06)}
+
+    /* left */
+    .search{display:flex;gap:8px;margin-bottom:12px}
+    .search input{flex:1;padding:10px;border-radius:10px;border:1px solid var(--glass);background:transparent}
+    .list{display:flex;flex-direction:column;gap:8px;max-height:56vh;overflow:auto;padding-right:6px}
+    .topic{display:flex;gap:10px;align-items:center;padding:10px;border-radius:10px;cursor:pointer;border:1px solid transparent}
+    .topic:hover{background:linear-gradient(90deg, rgba(107,70,255,0.04), transparent)}
+    .topic.active{background:linear-gradient(90deg, rgba(6,182,212,0.06), transparent);border-color:rgba(6,182,212,0.08)}
+    .tag{font-size:12px;color:var(--muted);border-radius:999px;padding:4px 8px;border:1px solid var(--glass);background:transparent}
+
+    /* right content */
+    .content h2{margin-top:0}
+    .icons{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .icon{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;border-radius:10px;width:92px}
+
+    /* actions */
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .btn{padding:8px 12px;border-radius:10px;border:1px solid var(--glass);background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);cursor:pointer}
+    .btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#04101a;border:none}
+
+    /* toast */
+    .toast{position:fixed;right:20px;bottom:20px;padding:12px 14px;border-radius:10px;background:rgba(0,0,0,0.8);color:#fff;display:none}
+
+    /* breathing UI */
+    .breathWrap{display:flex;align-items:center;gap:14px}
+    .circle{width:120px;height:120px;border-radius:50%;display:grid;place-items:center;border:6px solid rgba(0,0,0,0.06)}
+
+    /* history */
+    .history{max-height:240px;overflow:auto;margin-top:8px;display:flex;flex-direction:column;gap:8px}
+    .entry{display:flex;justify-content:space-between;padding:8px;border-radius:8px;border:1px solid var(--glass);background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent)}
+
+    /* stats svg */
+    .chart{margin-top:12px}
+
+    /* responsive */
+    @media (max-width:980px){.layout{grid-template-columns:1fr}}
+
+    /* small helpers */
+    .muted{color:var(--muted)}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace}
+
+    /* subtle animations */
+    .pulse{animation:pulse 2s infinite ease-in-out}
+    @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+  </style>
+</head>
+<body data-theme="light">
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Emosi Manusia</h1>
+        <p class="lead"></p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn" id="toggleTheme">Toggle Dark</button>
+        <button class="btn" id="exportAll">Export JSON</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="panel">
+        <div class="search">
+          <input id="q" placeholder="Cari topik atau kata kunci...">
+          <button class="btn" id="clear">X</button>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <button class="tag" data-filter="all">Semua</button>
+          <button class="tag" data-filter="basic">Dasar</button>
+          <button class="tag" data-filter="types">Jenis</button>
+          <button class="tag" data-filter="manage">Kelola</button>
+        </div>
+
+        <div class="list" id="list"></div>
+
+        <div style="margin-top:12px">
+          <strong>Riwayat terakhi</strong>
+          <div class="history" id="history"></div>
+        </div>
+      </aside>
+
+      <section class="panel content" id="content">
+        <h2>Selamat datang</h2>
+        <p class="muted">Pilih topik dari sebelah kiri untuk melihat penjelasan lengkap. Di bawah ada fitur interaktif: simpan, salin, latihan, dan statistik.</p>
+
+        <div class="actions" id="topActions">
+          <button class="btn primary" id="saveSummary">Simpan Ringkasan</button>
+          <button class="btn" id="copyText">Salin ke Clipboard</button>
+          <button class="btn" id="startPractice">Mulai Latihan</button>
+          <button class="btn" id="clearHistory">Hapus Riwayat</button>
+        </div>
+
+        <div id="mainBody" style="margin-top:12px"></div>
+
+        <div style="display:flex;gap:18px;align-items:flex-start;margin-top:14px">
+          <div style="flex:1">
+            <h4>Roda Emosi — klik untuk pilih</h4>
+            <div id="wheelContainer"></div>
+          </div>
+          <div style="width:260px">
+            <h4>Latihan Pernapasan</h4>
+            <div class="breathWrap">
+              <div class="circle" id="breathCircle"><strong id="breathLabel">Ready</strong></div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <button class="btn primary" id="startBreath">Mulai</button>
+                <button class="btn" id="stopBreath">Berhenti</button>
+              </div>
+            </div>
+            <div class="chart" id="chartContainer"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="toast" id="toast">Tersimpan</div>
+  </div>
+
+  <script>
+    // DATA
+    const TOPICS = [
+      {id:'def',title:'Pengertian Emosi',tags:['basic'], emoji:'💭', body:'Emosi adalah respons psikis dan fisiologis terhadap kejadian, pikiran, atau hubungan. Mereka mempengaruhi pengalaman subjektif, ekspresi, dan tindakan.'},
+      {id:'types',title:'Jenis Emosi Dasar',tags:['types'], emoji:'🧭', body:'Model populer menyebut 6-8 emosi dasar: kebahagiaan, kesedihan, takut, marah, jijik, kejutan; beberapa menambahkan percaya & antisipasi.'},
+      {id:'functions',title:'Fungsi Emosi',tags:['basic','function'], emoji:'⚙️', body:'Emosi membantu pengambilan keputusan cepat, memandu perhatian, dan memperkuat hubungan sosial.'},
+      {id:'physio',title:'Aspek Fisiologis',tags:['basic'], emoji:'💓', body:'Emosi memicu respons saraf otonom: perubahan detak jantung, napas, dan pelepasan hormon.'},
+      {id:'recognize',title:'Mengenali Emosi',tags:['manage'], emoji:'👀', body:'Perhatikan sensasi tubuh, pola pikir, dan perilaku. Menulis jurnal membantu memetakan pola.'},
+      {id:'manage',title:'Strategi Mengelola Emosi',tags:['manage'], emoji:'🛠️', body:'Teknik: pernapasan, reappraisal, labeling, grounding, journaling, serta mencari dukungan profesional jika perlu.'},
+      {id:'social',title:'Emosi & Interaksi Sosial',tags:['function'], emoji:'🤝', body:'Ekspresi emosi mempengaruhi komunikasi dan ikatan sosial; regulasi emosi penting untuk hubungan sehat.'}
+    ];
+
+    // helpers
+    const el=id=>document.getElementById(id);
+    const listEl = el('list'); const contentEl = el('content'); const mainBody = el('mainBody'); const q = el('q'); const historyEl = el('history'); const toast = el('toast');
+
+    // state
+    let state = { selected: TOPICS[0].id, history: JSON.parse(localStorage.getItem('emo_history')||'[]'), theme: localStorage.getItem('emo_theme')||'light' };
+    document.body.setAttribute('data-theme', state.theme);
+    el('toggleTheme').textContent = state.theme==='dark' ? 'Toggle Light' : 'Toggle Dark';
+
+    // render list
+    function renderList(filter=''){
+      listEl.innerHTML='';
+      const qf = (filter||'').toLowerCase();
+      TOPICS.filter(t=> t.title.toLowerCase().includes(qf) || t.body.toLowerCase().includes(qf) || filter==='').forEach(t=>{
+        const d = document.createElement('div'); d.className='topic'; d.dataset.id=t.id; d.innerHTML = `<div style="font-size:20px">${t.emoji}</div><div><strong>${t.title}</strong><div class='muted' style='font-size:13px'>${t.body.slice(0,90)}...</div></div>`;
+        d.addEventListener('click', ()=> openTopic(t.id));
+        listEl.appendChild(d);
+      });
+      highlightSelected();
+    }
+
+    function highlightSelected(){ document.querySelectorAll('.topic').forEach(n=> n.classList.toggle('active', n.dataset.id===state.selected)); }
+
+    // open topic
+    function openTopic(id){ state.selected=id; highlightSelected(); const t = TOPICS.find(x=>x.id===id); if(!t) return; mainBody.innerHTML = `<h3>${t.title} <span class='muted'>${t.emoji}</span></h3><p class='muted'>Tags: ${t.tags.join(', ')}</p><p style='line-height:1.6;margin-top:10px'>${t.body}</p>` + renderExtras(id);
+      pushHistory({type:'open', id:id, t:Date.now(), title:t.title});
+    }
+
+    function renderExtras(id){
+      if(id==='types'){
+        return `
+          <div style='margin-top:12px'><strong>Emosi dasar</strong>
+            <div class='icons'>
+              <div class='icon'>😊<div class='muted'>Kebahagiaan</div></div>
+              <div class='icon'>😢<div class='muted'>Kesedihan</div></div>
+              <div class='icon'>😨<div class='muted'>Takut</div></div>
+              <div class='icon'>😠<div class='muted'>Marah</div></div>
+              <div class='icon'>🤢<div class='muted'>Jijik</div></div>
+              <div class='icon'>😲<div class='muted'>Kaget</div></div>
+            </div>
+          </div>`;
+      }
+      if(id==='manage'){
+        return `
+          <div style='margin-top:12px'><strong>Opsi latihan singkat</strong>
+            <div style='display:flex;gap:8px;margin-top:8px'>
+              <button class='btn' onclick='startQuickBreath()'>Deep Breath 4-4-6</button>
+              <button class='btn' onclick='startLabeling()'>Labeling 30s</button>
+              <button class='btn' onclick='startGrounding()'>Grounding 5-4-3</button>
+            </div>
+          </div>`;
+      }
+      if(id==='functions'){
+        return `<div style='margin-top:12px'><strong>Contoh penggunaan</strong><ul class='muted'><li>Gunakan pernapasan untuk menenangkan sistem saraf.</li><li>Labeling membantu mengurangi intensitas emosi.</li></ul></div>`;
+      }
+      return '';
+    }
+
+    // history
+    function pushHistory(entry){ state.history.push(entry); if(state.history.length>60) state.history.shift(); saveHistory(); renderHistory(); }
+    function saveHistory(){ localStorage.setItem('emo_history', JSON.stringify(state.history)); }
+    function renderHistory(){ historyEl.innerHTML=''; (state.history.slice().reverse()).forEach(h=>{ const e=document.createElement('div'); e.className='entry'; e.innerHTML=`<div><strong>${h.title||h.id}</strong><div class='muted' style='font-size:12px'>${new Date(h.t).toLocaleString()}</div></div><div class='muted mono' style='font-size:12px'>${h.type}</div>`; historyEl.appendChild(e); }); }
+
+    // actions
+    el('saveSummary').addEventListener('click', ()=>{ const t = TOPICS.find(x=>x.id===state.selected); const blob = new Blob([t.title + '\n\n' + t.body], {type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download = `${t.id}_summary.txt`; a.click(); URL.revokeObjectURL(a.href); showToast('Ringkasan disimpan.'); pushHistory({type:'save', id: t.id, title: t.title, t:Date.now()}); });
+
+    el('copyText').addEventListener('click', ()=>{ const t = TOPICS.find(x=>x.id===state.selected); navigator.clipboard.writeText(t.title + '\n\n' + t.body).then(()=>{ showToast('Teks disalin ke clipboard'); pushHistory({type:'copy', id:t.id, title:t.title, t:Date.now()}); }).catch(()=>{ alert('Browser tidak mendukung clipboard API'); }); });
+
+    el('startPractice').addEventListener('click', ()=>{ startQuickBreath(); pushHistory({type:'practice', id:state.selected, title:TOPICS.find(x=>x.id===state.selected).title, t:Date.now()}); });
+    el('clearHistory').addEventListener('click', ()=>{ if(confirm('Hapus seluruh riwayat?')){ state.history=[]; saveHistory(); renderHistory(); showToast('Riwayat dihapus'); } });
+
+    // theme
+    el('toggleTheme').addEventListener('click', ()=>{ state.theme = state.theme==='dark' ? 'light' : 'dark'; document.body.setAttribute('data-theme', state.theme); localStorage.setItem('emo_theme', state.theme); el('toggleTheme').textContent = state.theme==='dark' ? 'Toggle Light' : 'Toggle Dark'; });
+
+    // search & filters
+    q.addEventListener('input', ()=> renderList(q.value)); el('clear').addEventListener('click', ()=>{ q.value=''; renderList(); }); document.querySelectorAll('.tag').forEach(b=> b.addEventListener('click', ()=>{ const f=b.dataset.filter; if(f==='all'){ renderList(); } else { renderList(); document.querySelectorAll('.topic').forEach(t=>{ const id=t.dataset.id; const obj=TOPICS.find(x=>x.id===id); t.style.display = obj.tags.includes(f) ? 'flex' : 'none'; }); } }));
+
+    // wheel (simple clickable wheel using SVG)
+    function buildWheel(){ const n= TOPICS.length; const svgNS='http://www.w3.org/2000/svg'; const svgw = document.createElementNS(svgNS,'svg'); svgw.setAttribute('width','260'); svgw.setAttribute('height','260'); svgw.setAttribute('viewBox','0 0 260 260'); const cx=130, cy=130, r=100; for(let i=0;i<n;i++){ const start = (i/n)*2*Math.PI - Math.PI/2; const end = ((i+1)/n)*2*Math.PI - Math.PI/2; const x1 = cx + r*Math.cos(start); const y1 = cy + r*Math.sin(start); const x2 = cx + r*Math.cos(end); const y2 = cy + r*Math.sin(end); const d = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`; const p = document.createElementNS(svgNS,'path'); p.setAttribute('d',d); p.setAttribute('fill-opacity','0.95'); p.setAttribute('fill', getColor(i)); p.setAttribute('stroke','rgba(0,0,0,0.05)'); p.dataset.idx = i; p.style.cursor='pointer'; p.addEventListener('click', ()=>{ openTopic(TOPICS[i].id); }); svgw.appendChild(p); // label
+        const ang = (start+end)/2; const lx = cx + (r+30)*Math.cos(ang); const ly = cy + (r+30)*Math.sin(ang); const t = document.createElementNS(svgNS,'text'); t.setAttribute('x', lx); t.setAttribute('y', ly); t.setAttribute('text-anchor','middle'); t.setAttribute('alignment-baseline','middle'); t.setAttribute('font-size','12'); t.setAttribute('fill', 'black'); t.textContent = TOPICS[i].emoji; svgw.appendChild(t);
+      }
+      const container = el('wheelContainer'); container.innerHTML=''; container.appendChild(svgw);
+    }
+    function getColor(i){ const palette=['#ffd166','#06d6a0','#8ecae6','#ffb4a2','#9ba4ff','#a8a8a8','#ff6b6b']; return palette[i%palette.length]; }
+
+    // breathing exercises
+    let breathInterval = null; let breathPhase = -1; const phases = [{label:'Tarik',dur:4000,scale:1.15},{label:'Tahan',dur:4000,scale:1.04},{label:'Hembus',dur:6000,scale:0.78}];
+    function startBreathing(){ if(breathInterval) return; breathPhase=-1; breathStep(); breathInterval = setInterval(breathStep, 4000+4000+6000); }
+    function breathStep(){ breathPhase = (breathPhase+1)%3; const p = phases[breathPhase]; el('breathLabel').textContent = p.label; const circ = el('breathCircle'); circ.animate([{transform:`scale(${p.scale})`},{transform:'scale(1)'}],{duration:p.dur,fill:'forwards'}); }
+    el('startBreath').addEventListener('click', ()=>{ startBreathing(); pushHistory({type:'breath', title:'Breathing exercise', t:Date.now()}); });
+    el('stopBreath').addEventListener('click', ()=>{ clearInterval(breathInterval); breathInterval=null; el('breathLabel').textContent='Ready'; showToast('Latihan dihentikan'); });
+
+    // quick helpers triggered from extras
+    window.startQuickBreath = ()=>{ startBreathing(); showToast('Deep breath dimulai'); };
+    window.startLabeling = ()=>{ alert('Labeling: Sebutkan emosi yang Anda rasakan selama 30 detik.'); pushHistory({type:'label', title:'Labeling', t:Date.now()}); };
+    window.startGrounding = ()=>{ alert('Grounding: Sebutkan 5 hal yang bisa Anda lihat, 4 yang bisa disentuh, 3 yang bisa didengar.'); pushHistory({type:'ground', title:'Grounding', t:Date.now()}); };
+
+    // toast
+    function showToast(txt='Tersimpan'){ toast.textContent = txt; toast.style.display='block'; setTimeout(()=> toast.style.display='none',2000); }
+
+    // export
+    el('exportAll').addEventListener('click', ()=>{ const data = {topics:TOPICS, history:state.history, theme: state.theme}; const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'}); const a=document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'emosi_export.json'; a.click(); URL.revokeObjectURL(a.href); showToast('Data diekspor'); });
+
+    // chart for recent interactions (simple bar SVG)
+    function renderChart(){ const counts = {}; TOPICS.forEach(t=> counts[t.id]=0); state.history.forEach(h=>{ if(h.type==='open' || h.type==='practice') counts[h.id] = (counts[h.id]||0)+1; }); const keys = Object.keys(counts); const values = keys.map(k=>counts[k]); const max = Math.max(...values,1); const svgNS='http://www.w3.org/2000/svg'; const w=240,h=100; const svg=document.createElementNS(svgNS,'svg'); svg.setAttribute('width',w); svg.setAttribute('height',h); keys.forEach((k,i)=>{ const bw = w/keys.length - 6; const barH = (values[i]/max)*(h-20); const x = i*(w/keys.length) + 4; const y = h - barH - 10; const rect=document.createElementNS(svgNS,'rect'); rect.setAttribute('x',x); rect.setAttribute('y',y); rect.setAttribute('width',bw); rect.setAttribute('height',barH); rect.setAttribute('fill',getColor(i)); svg.appendChild(rect); const tx=document.createElementNS(svgNS,'text'); tx.setAttribute('x', x + bw/2); tx.setAttribute('y', h-2); tx.setAttribute('font-size',10); tx.setAttribute('text-anchor','middle'); tx.textContent = TOPICS.find(t=>t.id===k).emoji; svg.appendChild(tx); }); const container=el('chartContainer'); container.innerHTML=''; container.appendChild(svg);
+    }
+
+    // initial
+    renderList(); openTopic(state.selected); renderHistory(); buildWheel(); renderChart();
+
+    // update chart & history on visibility change
+    const originalPush = pushHistory; window.pushHistory = function(e){ originalPush(e); renderChart(); };
+
+  </script>
+</body>
+</html>
